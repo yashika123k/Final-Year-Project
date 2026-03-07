@@ -1,4 +1,5 @@
-rust-sim/target/
-rust-sim/src/data.csv
-notebook/.venv/
-target/
+sim/.venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
