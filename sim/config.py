@@ -1,71 +1,50 @@
-import math
+import numpy as np
 
 # =============================================================================
 # Simulation Area & Visualization
 # =============================================================================
+DEPLOYMENT_AREA_WIDTH_M: float = 500.0
+DEPLOYMENT_AREA_HEIGHT_M: float = 500.0
 
-AREA_WIDTH = 500.0
-AREA_HEIGHT = 500.0
+VISUALIZATION_WIDTH_PX: int = 1200
+VISUALIZATION_HEIGHT_PX: int = 720
 
-SCREEN_WIDTH = 1200.0
-SCREEN_HEIGHT = 720.0
+METERS_TO_PIXELS_X: float = VISUALIZATION_WIDTH_PX / DEPLOYMENT_AREA_WIDTH_M
+METERS_TO_PIXELS_Y: float = VISUALIZATION_HEIGHT_PX / DEPLOYMENT_AREA_HEIGHT_M
 
-# scaling factor (x, y)
-TO_PIXEL_SCALE = (
-    SCREEN_WIDTH / AREA_WIDTH,
-    SCREEN_HEIGHT / AREA_HEIGHT
-)
-
-FPS = 10
-SENSOR_RADIUS = 10.0
-
+TARGET_FPS: int = 10
+SENSOR_VISUAL_RADIUS_PX: int = 8
 
 # =============================================================================
 # LEACH Protocol Parameters
 # =============================================================================
-
-NUM_NODES = 100
-
-CH_PROBABILITY = 0.1
-
-EXPECTED_CLUSTER_HEADS = math.ceil(NUM_NODES * CH_PROBABILITY)
-
-CYCLE_LENGTH = int(1.0 / CH_PROBABILITY)
-
+TOTAL_SENSOR_NODES: int = 100
+CLUSTER_HEAD_PROBABILITY: float = 0.1
+EXPECTED_NUM_CLUSTER_HEADS: int = int(np.ceil(TOTAL_SENSOR_NODES * CLUSTER_HEAD_PROBABILITY))
+CLUSTER_HEAD_CYCLE_LENGTH_ROUNDS: int = int(1.0 / CLUSTER_HEAD_PROBABILITY)
 
 # =============================================================================
 # First-Order Radio Energy Model Parameters
 # =============================================================================
-
-INITIAL_ENERGY = 2.0
-
-E_ELECTRONICS = 5e-8
-E_FREE_SPACE = 1e-11
-E_MULTIPATH = 1.3e-15
-E_AGGREGATION = 5e-9
-
-PACKET_SIZE = 4000.0
-
+INITIAL_NODE_ENERGY_J: float = 2.0
+ENERGY_PER_BIT_ELECTRONICS_J: float = 5e-8
+ENERGY_FREE_SPACE_AMP_J: float = 1e-11
+ENERGY_MULTIPATH_AMP_J: float = 1.3e-15
+ENERGY_AGGREGATION_J: float = 5e-9
+DATA_PACKET_SIZE_BITS: float = 4000.0
 
 # =============================================================================
 # Radio Propagation & Threshold
 # =============================================================================
-
-THRESHOLD_DISTANCE = 87.7
-
+FS_MULTIPATH_THRESHOLD_DISTANCE_M: float = 87.7
 
 # =============================================================================
 # Base Station (Sink)
 # =============================================================================
-
-SINK = (
-    AREA_WIDTH / 2.0,
-    AREA_HEIGHT / 2.0
-)
-
+BASE_STATION_POSITION = np.array([DEPLOYMENT_AREA_WIDTH_M / 2.0, DEPLOYMENT_AREA_HEIGHT_M / 2.0], dtype=np.float32)
 
 # =============================================================================
 # Simulation Control
 # =============================================================================
-
-MAX_ROUNDS = 2000
+MAX_SIMULATION_ROUNDS: int = 2000
+TARGET_SIMULATION_STEPS_PER_SECOND: float = 10.0
