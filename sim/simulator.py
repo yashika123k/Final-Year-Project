@@ -27,9 +27,17 @@ class Simulator:
         self.current_round: int = 0
         self.alive_node_count: int = node_count
 
+        self.alive_history: list[int] = []
+        self.energy_history: list[float] = []
+
     def update(self, protocol: Protocol) -> None:
         self.current_round += 1
         protocol.run_round(self)
+
+        total_energy = sum(node.remaining_energy_j for node in self.nodes)
+
+        self.alive_history.append(self.alive_node_count)
+        self.energy_history.append(total_energy)
 
     def render(self, screen: pygame.Surface) -> None:
         COLOR_DEAD   = (180, 60, 60)
