@@ -1,22 +1,13 @@
-from __future__ import annotations
-from abc import ABC, abstractmethod
+from typing import Protocol
 import pygame
-
 from node import Node
 from config import (
     SENSOR_VISUAL_RADIUS_PX,
     METERS_TO_PIXELS_X,
     METERS_TO_PIXELS_Y,
     BASE_STATION_POSITION,
+    FS_MULTIPATH_THRESHOLD_DISTANCE_M,
 )
-
-
-class Protocol(ABC):
-    @abstractmethod
-    def run_round(self, simulator: "Simulator") -> None: ...
-
-    @abstractmethod
-    def name(self) -> str: ...
 
 
 class Simulator:
@@ -30,7 +21,7 @@ class Simulator:
         self.alive_history: list[int] = []
         self.energy_history: list[float] = []
 
-    def update(self, protocol: Protocol) -> None:
+    def update(self, protocol) -> None:
         self.current_round += 1
         protocol.run_round(self)
 
@@ -39,31 +30,78 @@ class Simulator:
         self.alive_history.append(self.alive_node_count)
         self.energy_history.append(total_energy)
 
-    def render(self, screen: pygame.Surface) -> None:
+    def render(self, screen: pygame.Surface, protocol=None) -> None:
         COLOR_DEAD   = (180, 60, 60)
         COLOR_CH     = (89, 172, 119)
         COLOR_NORMAL = (245, 235, 200)
         COLOR_BS     = (100, 180, 255)
         COLOR_LINK   = (80, 80, 100)
+        COLOR_CH_LINK = (60, 120, 80)
 
-        # Draw links
+        # =======================
+        # BASE STATION
+        # =======================
+        bsx = int(BASE_STATION_POSITION[0] * METERS_TO_PIXELS_X)
+        bsy = int(BASE_STATION_POSITION[1] * METERS_TO_PIXELS_Y)
+
+        # =======================
+        # DYNAMIC ZONE RADIUS
+        # =======================
+        if protocol is not None and hasattr(protocol, "current_radius"):
+            radius_m = protocol.current_radius
+        else:
+            radius_m = FS_MULTIPATH_THRESHOLD_DISTANCE_M * 1.5
+
+        zone_radius_px = int(radius_m * METERS_TO_PIXELS_X)
+
+        # =======================
+        # DRAW ZONE (DYNAMIC)
+        # =======================
+        overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+
+        pygame.draw.circle(
+            overlay,
+            (100, 100, 255, 30),
+            (bsx, bsy),
+            zone_radius_px
+        )
+
+        screen.blit(overlay, (0, 0))
+
+        pygame.draw.circle(
+            screen,
+            (100, 100, 180),
+            (bsx, bsy),
+            zone_radius_px,
+            2
+        )
+
+        # =======================
+        # DRAW LINKS
+        # =======================
         for node in self.nodes:
             if not node.is_alive:
                 continue
+
             sx = int(node.position[0] * METERS_TO_PIXELS_X)
             sy = int(node.position[1] * METERS_TO_PIXELS_Y)
 
-            if node.is_cluster_head:
-                bsx = int(BASE_STATION_POSITION[0] * METERS_TO_PIXELS_X)
-                bsy = int(BASE_STATION_POSITION[1] * METERS_TO_PIXELS_Y)
-                pygame.draw.line(screen, (60, 120, 80), (sx, sy), (bsx, bsy), 1)
-            elif node.cluster_head_id is not None:
-                ch = self.nodes[node.cluster_head_id]
-                cx = int(ch.position[0] * METERS_TO_PIXELS_X)
-                cy = int(ch.position[1] * METERS_TO_PIXELS_Y)
-                pygame.draw.line(screen, COLOR_LINK, (sx, sy), (cx, cy), 1)
+            if node.taregt_node_id is not None:
+                target_node = self.nodes[node.taregt_node_id]
 
-        # Draw nodes
+                tx = int(target_node.position[0] * METERS_TO_PIXELS_X)
+                ty = int(target_node.position[1] * METERS_TO_PIXELS_Y)
+
+                if node.is_cluster_head:
+                    pygame.draw.line(screen, COLOR_CH_LINK, (sx, sy), (tx, ty), 1)
+                else:
+                    pygame.draw.line(screen, COLOR_LINK, (sx, sy), (tx, ty), 1)
+            else:
+                pygame.draw.line(screen, COLOR_DEAD, (sx, sy), (bsx, bsy), 1)
+
+        # =======================
+        # DRAW NODES
+        # =======================
         for node in self.nodes:
             sx = int(node.position[0] * METERS_TO_PIXELS_X)
             sy = int(node.position[1] * METERS_TO_PIXELS_Y)
@@ -77,7 +115,7 @@ class Simulator:
 
             pygame.draw.circle(screen, color, (sx, sy), r)
 
-        # Draw base station
-        bsx = int(BASE_STATION_POSITION[0] * METERS_TO_PIXELS_X)
-        bsy = int(BASE_STATION_POSITION[1] * METERS_TO_PIXELS_Y)
+        # =======================
+        # DRAW BASE STATION
+        # =======================
         pygame.draw.rect(screen, COLOR_BS, (bsx - 10, bsy - 10, 20, 20))

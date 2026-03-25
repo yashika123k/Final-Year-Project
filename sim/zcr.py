@@ -1,9 +1,8 @@
-from __future__ import annotations
 import numpy as np
 from sklearn.cluster import KMeans
 
 from node import Node
-from simulator import Protocol, Simulator
+from simulator import Simulator
 from utils import (
     reset_node_for_new_round,
     calculate_transmit_energy,
@@ -16,150 +15,289 @@ from config import (
     FS_MULTIPATH_THRESHOLD_DISTANCE_M,
 )
 
+EPS = 1e-12
 
-class Zcr(Protocol):
-    """
-    ZCR: Zone-based Cluster Routing (proposed variant).
-    - Uses sklearn KMeans to partition nodes into spatial clusters.
-    - Selects best CH per cluster by energy + centrality score.
-    - Divides CHs into near/far zones; far-zone CHs may relay via nearest near-zone CH.
-    """
+
+class Zcr:
 
     def __init__(self, cluster_head_probability: float):
         self.cluster_head_probability = cluster_head_probability
-        self.num_cluster_heads: int = 0
-        # zone_cluster_heads[0] = far, zone_cluster_heads[1] = near
-        self.zone_cluster_heads: list[list[int]] = [[], []]
+        self.near_chs = []
+        self.far_chs = []
+        self.current_radius = FS_MULTIPATH_THRESHOLD_DISTANCE_M * 1.5
 
-    def name(self) -> str:
-        return "ZCR"
+    def name(self):
+        return "ZCR_ROTATION"
 
-    def _assign_zones(
-        self,
-        selected_ch_ids: list[int | None],
-        nodes: list[Node],
-    ) -> None:
-        self.zone_cluster_heads = [[], []]
-        for ch_id in selected_ch_ids:
-            if ch_id is None:
+    # =======================
+    # DYNAMIC RADIUS
+    # =======================
+    def _compute_dynamic_radius(self, nodes):
+        near_energy, far_energy = [], []
+
+        for n in nodes:
+            if not n.is_alive:
                 continue
-            dist = nodes[ch_id].distance_to_base_station_m
-            if dist <= FS_MULTIPATH_THRESHOLD_DISTANCE_M:
-                self.zone_cluster_heads[1].append(ch_id)   # near
+            if n.distance_to_base_station_m <= self.current_radius:
+                near_energy.append(n.remaining_energy_j)
             else:
-                self.zone_cluster_heads[0].append(ch_id)   # far
-            nodes[ch_id].is_cluster_head = True
+                far_energy.append(n.remaining_energy_j)
 
-    def _form_clusters(
-        self,
-        selected_ch_ids: list[int | None],
-        nodes: list[Node],
-        cluster_assignments: np.ndarray,
-    ) -> None:
-        for node_id, cluster_idx in enumerate(cluster_assignments):
-            node = nodes[node_id]
-            if not node.is_alive or node.is_cluster_head:
+        if not near_energy or not far_energy:
+            return self.current_radius
+
+        avg_near = sum(near_energy) / len(near_energy)
+        avg_far = sum(far_energy) / len(far_energy)
+
+        ratio = avg_near / (avg_far + EPS)
+
+        # FIX #1: tighter alpha clamp (was 0.7–1.6, now 0.85–1.3).
+        # The old range let the radius swing too aggressively, funnelling
+        # far-zone nodes into oversized clusters that drained them faster.
+        alpha = np.clip(ratio ** 0.4, 0.85, 1.3)
+        new_radius = FS_MULTIPATH_THRESHOLD_DISTANCE_M * alpha * 1.5
+
+        self.current_radius = 0.9 * self.current_radius + 0.1 * new_radius
+        return self.current_radius
+
+    # =======================
+    # ZONE SPLIT
+    # =======================
+    def _split_zones(self, nodes):
+        radius = self._compute_dynamic_radius(nodes)
+
+        near_ids, far_ids = [], []
+
+        for n in nodes:
+            if not n.is_alive:
                 continue
-            ch_id = selected_ch_ids[cluster_idx]
-            if ch_id is not None:
-                node.cluster_head_id = ch_id
-                nodes[ch_id].cluster_member_ids.append(node_id)
-                dist = float(np.linalg.norm(node.position - nodes[ch_id].position))
-                node.remaining_energy_j -= calculate_transmit_energy(DATA_PACKET_SIZE_BITS, dist)
+            if n.distance_to_base_station_m <= radius:
+                near_ids.append(n.id)
+            else:
+                far_ids.append(n.id)
 
-    def _dissipate_ch_energy(self, nodes: list[Node]) -> None:
-        # Far-zone CHs
-        for far_ch_id in self.zone_cluster_heads[0]:
-            min_relay_dist = float("inf")
-            best_near_id: int | None = None
+        return near_ids, far_ids
 
-            for near_ch_id in self.zone_cluster_heads[1]:
-                d = float(np.linalg.norm(nodes[far_ch_id].position - nodes[near_ch_id].position))
-                if d < min_relay_dist:
-                    min_relay_dist = d
-                    best_near_id = near_ch_id
+    # =======================
+    # CH SELECTION (ROTATION)
+    # =======================
+    def _select_chs(self, node_ids, nodes, k, current_round):
 
-            member_count = len(nodes[far_ch_id].cluster_member_ids)
-            nodes[far_ch_id].remaining_energy_j -= (
+        if len(node_ids) == 0:
+            return [], np.array([])
+
+        positions = np.array([nodes[i].position for i in node_ids])
+
+        k = min(k, len(node_ids))
+        kmeans = KMeans(n_clusters=k, n_init=3).fit(positions)
+
+        labels = kmeans.labels_
+        centroids = kmeans.cluster_centers_
+
+        selected = [None] * k
+        best_scores = [-1e9] * k
+
+        for idx, nid in enumerate(node_ids):
+            node = nodes[nid]
+            c = labels[idx]
+
+            energy = node.remaining_energy_j / INITIAL_NODE_ENERGY_J
+            d_bs = node.distance_to_base_station_m / 500
+            d_cent = np.linalg.norm(node.position - centroids[c]) / 500
+
+            rounds_since_ch = current_round - getattr(node, "last_ch_round", -1000)
+            cooldown = 1 - np.exp(-rounds_since_ch / 5)
+
+            score = (
+                (0.7 * energy - 0.1 * d_bs - 0.2 * d_cent)
+                * cooldown
+            )
+
+            if score > best_scores[c]:
+                best_scores[c] = score
+                selected[c] = nid
+
+        for i in range(k):
+            if selected[i] is None:
+                selected[i] = node_ids[i]
+
+        return selected, labels
+
+    # =======================
+    # ASSIGN NODES
+    # =======================
+    def _assign_nodes(self, node_ids, ch_ids, labels, nodes, current_round):
+        ch_set = set(ch_ids)
+
+        for idx, nid in enumerate(node_ids):
+            node = nodes[nid]
+
+            if nid in ch_set:
+                node.is_cluster_head = True
+                node.taregt_node_id = None
+                node.last_ch_round = current_round
+                continue
+
+            ch = ch_ids[labels[idx]]
+            node.taregt_node_id = ch
+            nodes[ch].cluster_member_ids.append(nid)
+
+            d = np.linalg.norm(node.position - nodes[ch].position)
+            node.remaining_energy_j -= calculate_transmit_energy(
+                DATA_PACKET_SIZE_BITS, d
+            )
+
+    # =======================
+    # ENERGY HANDLING
+    # =======================
+    def _handle_ch_energy(self, nodes):
+
+        # --- FAR CHs ---
+        for fid in self.far_chs:
+            node = nodes[fid]
+            members = len(node.cluster_member_ids)
+
+            # FIX #2: removed the 0.7 discount factor on far-CH receive energy.
+            # The discount was arbitrary and gave far CHs a hidden subsidy that
+            # masked how much energy they were actually spending, making the
+            # accounting inconsistent with near CHs (which pay full price).
+            node.remaining_energy_j -= members * (
                 calculate_receive_energy(DATA_PACKET_SIZE_BITS)
                 + calculate_aggregation_energy(DATA_PACKET_SIZE_BITS)
-            ) * member_count
+            )
 
-            if best_near_id is not None and min_relay_dist < nodes[far_ch_id].distance_to_base_station_m:
-                nodes[far_ch_id].remaining_energy_j -= calculate_transmit_energy(DATA_PACKET_SIZE_BITS, min_relay_dist)
-                nodes[best_near_id].remaining_energy_j -= (
+            # Find best near-CH relay candidate
+            best_near = None
+            best_dist = float("inf")
+
+            for nid in self.near_chs:
+                # Relay must be strictly closer to BS than this far CH
+                if nodes[nid].distance_to_base_station_m >= node.distance_to_base_station_m:
+                    continue
+
+                d = np.linalg.norm(node.position - nodes[nid].position)
+                if d < best_dist:
+                    best_dist = d
+                    best_near = nid
+
+            direct_cost = calculate_transmit_energy(
+                DATA_PACKET_SIZE_BITS,
+                node.distance_to_base_station_m
+            )
+
+            relay_cost = float("inf")
+            if best_near is not None:
+                hop1 = calculate_transmit_energy(DATA_PACKET_SIZE_BITS, best_dist)
+                hop2 = calculate_transmit_energy(
+                    DATA_PACKET_SIZE_BITS,
+                    nodes[best_near].distance_to_base_station_m
+                )
+                # FIX #3: relay_cost is just the far-CH's share (hop1 only).
+                # Previously relay was hop1+hop2, but hop2 is paid by the near
+                # CH — attributing it to the far CH was double-counting energy
+                # and made the relay path look falsely expensive, causing far
+                # CHs to needlessly transmit directly to BS at high cost.
+                relay_cost = hop1
+
+            # FIX #4: threshold changed from 1.2× to 0.9× (relay must be
+            # meaningfully cheaper, not just marginally so, before we commit
+            # to routing through a near CH and burdening it).
+            if best_near is not None and relay_cost < direct_cost * 0.9:
+                node.taregt_node_id = best_near
+
+                # Far CH pays only its own hop
+                node.remaining_energy_j -= relay_cost
+
+                # Near CH pays for the relay reception + re-aggregation + BS tx.
+                # FIX #5: added the BS-tx cost for the near CH here. Previously
+                # only receive+aggregate was charged; the near CH's onward
+                # transmission to BS was silently lost, understating near-CH
+                # energy drain and making near nodes appear healthier than they
+                # were relative to far nodes.
+                near_node = nodes[best_near]
+                near_node.remaining_energy_j -= (
                     calculate_receive_energy(DATA_PACKET_SIZE_BITS)
                     + calculate_aggregation_energy(DATA_PACKET_SIZE_BITS)
+                    + calculate_transmit_energy(
+                        DATA_PACKET_SIZE_BITS,
+                        near_node.distance_to_base_station_m
+                    )
                 )
             else:
-                nodes[far_ch_id].remaining_energy_j -= calculate_transmit_energy(
-                    DATA_PACKET_SIZE_BITS, nodes[far_ch_id].distance_to_base_station_m
-                )
+                node.taregt_node_id = None
+                node.remaining_energy_j -= direct_cost
 
-        # Near-zone CHs
-        for near_ch_id in self.zone_cluster_heads[1]:
-            member_count = len(nodes[near_ch_id].cluster_member_ids)
-            nodes[near_ch_id].remaining_energy_j -= member_count * (
+        # --- NEAR CHs ---
+        for nid in self.near_chs:
+            node = nodes[nid]
+            members = len(node.cluster_member_ids)
+
+            node.remaining_energy_j -= members * (
                 calculate_receive_energy(DATA_PACKET_SIZE_BITS)
                 + calculate_aggregation_energy(DATA_PACKET_SIZE_BITS)
             )
-            nodes[near_ch_id].remaining_energy_j -= calculate_transmit_energy(
-                DATA_PACKET_SIZE_BITS, nodes[near_ch_id].distance_to_base_station_m
+
+            node.taregt_node_id = None
+
+            node.remaining_energy_j -= calculate_transmit_energy(
+                DATA_PACKET_SIZE_BITS,
+                node.distance_to_base_station_m
             )
 
-    def run_round(self, simulator: Simulator) -> None:
-        if simulator.alive_node_count == 0:
-            return
+    # =======================
+    # MAIN LOOP
+    # =======================
+    def run_round(self, simulator: Simulator):
 
-        self.num_cluster_heads = max(
-            1, int(np.ceil(self.cluster_head_probability * simulator.alive_node_count))
-        )
+        nodes = simulator.nodes
 
-        # Gather alive node positions for KMeans
-        alive_ids = [n.id for n in simulator.nodes if n.is_alive]
-        positions = np.array([simulator.nodes[i].position for i in alive_ids])
+        for n in nodes:
+            reset_node_for_new_round(n)
 
-        k = min(self.num_cluster_heads, len(alive_ids))
-        kmeans = KMeans(n_clusters=k, n_init=3, max_iter=100)
-        kmeans.fit(positions)
+            if not hasattr(n, "last_ch_round"):
+                n.last_ch_round = -1000
 
-        centroids = kmeans.cluster_centers_
-        # Map alive node → cluster label
-        alive_labels = kmeans.labels_
-
-        # Build full cluster assignment array (dead nodes → cluster 0, won't matter)
-        cluster_assignments = np.zeros(len(simulator.nodes), dtype=int)
-        for idx, node_id in enumerate(alive_ids):
-            cluster_assignments[node_id] = alive_labels[idx]
-
-        # Reset and check death
-        for node in simulator.nodes:
-            reset_node_for_new_round(node)
-            if node.is_alive and node.remaining_energy_j <= 0.0:
-                node.is_alive = False
+            if n.is_alive and n.remaining_energy_j <= EPS:
+                n.is_alive = False
                 simulator.alive_node_count -= 1
 
-        # Select best CH per cluster
-        selected_ch_ids: list[int | None] = [None] * k
-        best_scores: list[float] = [float("-inf")] * k
+        near_ids, far_ids = self._split_zones(nodes)
 
-        DIAG = (500.0 ** 2 + 500.0 ** 2) ** 0.5  # ≈ 707
+        # FIX #6: use the same CH probability multiplier for both zones
+        # (was 0.8× near / 1.5× far). A higher k_far means more far nodes
+        # become CHs each round, spending aggregation + relay energy every
+        # round rather than just member tx energy — this was the biggest
+        # single driver of accelerated far-zone death. Equal multipliers
+        # spread the CH role (and its energy cost) symmetrically.
+        k_near = max(1, round(len(near_ids) * self.cluster_head_probability)) if near_ids else 0
+        k_far  = max(1, round(len(far_ids)  * self.cluster_head_probability)) if far_ids else 0
 
-        for node_id, cluster_idx in enumerate(cluster_assignments):
-            node = simulator.nodes[node_id]
-            if not node.is_alive:
-                continue
+        near_chs, near_labels = self._select_chs(
+            near_ids, nodes, k_near, simulator.current_round
+        )
+        far_chs, far_labels = self._select_chs(
+            far_ids, nodes, k_far, simulator.current_round
+        )
 
-            energy_score = node.remaining_energy_j / INITIAL_NODE_ENERGY_J
-            centroid = centroids[cluster_idx]
-            dist_to_centroid = float(np.linalg.norm(node.position - centroid))
-            penalty = dist_to_centroid / DIAG
+        self.near_chs = near_chs
+        self.far_chs = far_chs
 
-            score = energy_score - penalty
-            if score > best_scores[cluster_idx]:
-                best_scores[cluster_idx] = score
-                selected_ch_ids[cluster_idx] = node_id
+        self._assign_nodes(near_ids, near_chs, near_labels, nodes, simulator.current_round)
+        self._assign_nodes(far_ids, far_chs, far_labels, nodes, simulator.current_round)
 
-        self._assign_zones(selected_ch_ids, simulator.nodes)
-        self._form_clusters(selected_ch_ids, simulator.nodes, cluster_assignments)
-        self._dissipate_ch_energy(simulator.nodes)
+        self._handle_ch_energy(nodes)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

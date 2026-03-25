@@ -1,6 +1,6 @@
 import random
 from node import Node
-from simulator import Protocol, Simulator
+from simulator import  Simulator
 from utils import (
     reset_node_for_new_round,
     calculate_transmit_energy,
@@ -10,7 +10,7 @@ from utils import (
 from config import DATA_PACKET_SIZE_BITS
 
 
-class Leach(Protocol):
+class Leach():
     """
     LEACH: Low-Energy Adaptive Clustering Hierarchy.
     Probabilistic CH election with rotation; members join nearest CH.
@@ -45,7 +45,7 @@ class Leach(Protocol):
                     nearest_ch_id = ch_id
 
             if nearest_ch_id is not None:
-                node.cluster_head_id = nearest_ch_id
+                node.taregt_node_id = nearest_ch_id
                 nodes[nearest_ch_id].cluster_member_ids.append(node.id)
                 node.remaining_energy_j -= calculate_transmit_energy(DATA_PACKET_SIZE_BITS, min_dist)
 

@@ -31,5 +31,5 @@ def calculate_aggregation_energy(data_size_bits: float) -> float:
 def reset_node_for_new_round(node: Node) -> None:
     """Resets protocol state of a node at the start of each round."""
     node.is_cluster_head = False
-    node.cluster_head_id = None
+    node.taregt_node_id = None
     node.cluster_member_ids = []

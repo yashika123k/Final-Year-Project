@@ -18,8 +18,6 @@ from simulator import Simulator
 from leach import Leach
 from zcr import Zcr
 
-pygame.font.init()
-FONT = pygame.font.SysFont("arial", 28)
 
 
 BG_COLOR  = (24, 22, 22)
@@ -42,9 +40,6 @@ def draw_menu(screen: pygame.Surface):
 
         pygame.draw.rect(screen, color, rect, border_radius=8)
 
-        text = FONT.render(label, True, (255, 255, 255))
-        text_rect = text.get_rect(center=rect.center)
-        screen.blit(text, text_rect)
 
         btns[label] = rect
 
@@ -108,15 +103,8 @@ def run_simulation(protocol_name: str):
 
         screen.fill(BG_COLOR)
 
-        simulator.render(screen)
+        simulator.render(screen,protocol)
 
-        info = FONT.render(
-            f"{protocol.name()}  |  Round: {simulator.current_round}  |  Alive: {simulator.alive_node_count}",
-            True,
-            (255, 255, 255)
-        )
-
-        screen.blit(info, (20, 20))
 
         pygame.display.flip()
         clock.tick(TARGET_FPS)

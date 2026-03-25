@@ -1,11 +1,9 @@
-from __future__ import annotations
 import numpy as np
 from typing import Optional
 from config import (
     INITIAL_NODE_ENERGY_J,
     BASE_STATION_POSITION,
 )
-
 
 class Node:
     """Represents a single sensor node in the WSN simulation."""
@@ -18,8 +16,9 @@ class Node:
         self.is_cluster_head: bool = False
         self.is_eligible_for_ch: bool = True
         self.distance_to_base_station_m: float = float(np.linalg.norm(BASE_STATION_POSITION - self.position))
-        self.cluster_head_id: Optional[int] = None
+        self.taregt_node_id: Optional[int] = None 
         self.cluster_member_ids: list[int] = []
+        self.last_ch_round = -1000
 
     @staticmethod
     def create_wsn(width: float, height: float, n_nodes: int) -> list[Node]:
