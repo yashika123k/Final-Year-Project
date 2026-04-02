@@ -48,3 +48,4 @@ BASE_STATION_POSITION = np.array([DEPLOYMENT_AREA_WIDTH_M / 2.0, DEPLOYMENT_AREA
 # =============================================================================
 MAX_SIMULATION_ROUNDS: int = 2000
 TARGET_SIMULATION_STEPS_PER_SECOND: float = 10.0
+
