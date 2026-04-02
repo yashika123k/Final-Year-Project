@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head reveal">
+    <div class="eyebrow">Comparative Evaluation</div>
+    <h2>Analysis Dashboard</h2>
+    <p>
+        Run both protocols on the same deployment and compare network lifetime,
+        node survival, and total energy fairly.
+    </p>
+</section>
+
+<section class="glass-panel control-panel reveal">
+    <div class="form-block">
+        <label for="compareSeedInput">Seed</label>
+        <input id="compareSeedInput" type="number" value="42">
+    </div>
+
+    <div class="button-row">
+        <button class="btn btn-primary" id="runCompareBtn">Run Full Comparison</button>
+        <button class="btn btn-ghost" id="compareCsvBtn">Export Compare CSV</button>
+        <button class="btn btn-ghost" id="compareJsonBtn">Export Compare JSON</button>
+    </div>
+</section>
+
+<section class="winner-hero reveal">
+    <div class="glass-panel winner-panel">
+        <div class="winner-copy">
+            <div class="eyebrow">Winner Spotlight</div>
+            <h3 id="winnerTitle">Awaiting comparison run</h3>
+            <p id="winnerText">
+                Click the comparison button to calculate the winner and populate all charts.
+            </p>
+        </div>
+        <div class="winner-badge-wrap">
+            <div id="winnerBadge" class="winner-badge neutral">READY</div>
+        </div>
+    </div>
+</section>
+
+<section class="compare-metric-grid reveal">
+    <div class="metric-compare-card glass-panel">
+        <span>First Node Death</span>
+        <strong id="cmpFndWinner">-</strong>
+        <small id="cmpFndText">No result yet</small>
+    </div>
+    <div class="metric-compare-card glass-panel">
+        <span>Half Nodes Dead</span>
+        <strong id="cmpHndWinner">-</strong>
+        <small id="cmpHndText">No result yet</small>
+    </div>
+    <div class="metric-compare-card glass-panel">
+        <span>Network Lifetime</span>
+        <strong id="cmpLifetimeWinner">-</strong>
+        <small id="cmpLifetimeText">No result yet</small>
+    </div>
+    <div class="metric-compare-card glass-panel">
+        <span>Residual Energy</span>
+        <strong id="cmpEnergyWinner">-</strong>
+        <small id="cmpEnergyText">No result yet</small>
+    </div>
+</section>
+
+<section class="protocol-summary-grid reveal">
+    <div class="glass-panel protocol-tile">
+        <div class="tile-head">
+            <h3>LEACH Summary</h3>
+            <span class="tile-chip leach">LEACH</span>
+        </div>
+        <div class="tile-metrics" id="leachTile">
+            <div class="tile-row"><span>Rounds</span><strong>-</strong></div>
+            <div class="tile-row"><span>First Dead</span><strong>-</strong></div>
+            <div class="tile-row"><span>Half Dead</span><strong>-</strong></div>
+            <div class="tile-row"><span>Last Dead</span><strong>-</strong></div>
+            <div class="tile-row"><span>Final Energy</span><strong>-</strong></div>
+        </div>
+    </div>
+
+    <div class="glass-panel protocol-tile">
+        <div class="tile-head">
+            <h3>AZC-PSO Summary</h3>
+            <span class="tile-chip zcr">ZCR</span>
+        </div>
+        <div class="tile-metrics" id="zcrTile">
+            <div class="tile-row"><span>Rounds</span><strong>-</strong></div>
+            <div class="tile-row"><span>First Dead</span><strong>-</strong></div>
+            <div class="tile-row"><span>Half Dead</span><strong>-</strong></div>
+            <div class="tile-row"><span>Last Dead</span><strong>-</strong></div>
+            <div class="tile-row"><span>Final Energy</span><strong>-</strong></div>
+        </div>
+    </div>
+</section>
+
+<section class="chart-grid reveal">
+    <div class="glass-panel chart-card">
+        <div class="panel-head">
+            <h3>Alive Nodes vs Rounds</h3>
+            <span class="chart-chip">Live Result</span>
+        </div>
+        <div class="chart-shell"><canvas id="aliveChart"></canvas></div>
+    </div>
+
+    <div class="glass-panel chart-card">
+        <div class="panel-head">
+            <h3>Dead Nodes vs Rounds</h3>
+            <span class="chart-chip">Live Result</span>
+        </div>
+        <div class="chart-shell"><canvas id="deadChart"></canvas></div>
+    </div>
+
+    <div class="glass-panel chart-card">
+        <div class="panel-head">
+            <h3>Total Energy vs Rounds</h3>
+            <span class="chart-chip">Live Result</span>
+        </div>
+        <div class="chart-shell"><canvas id="energyChart"></canvas></div>
+    </div>
+
+    <div class="glass-panel chart-card">
+        <div class="panel-head">
+            <h3>Result Summary</h3>
+        </div>
+        <div id="summaryPanel" class="summary-panel">
+            Run the comparison to generate charts and metrics.
+        </div>
+    </div>
+</section>
+{% endblock %}

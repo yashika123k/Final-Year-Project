@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head reveal">
+    <div class="eyebrow">Conceptual Background</div>
+    <h2>Theory</h2>
+    <p>The scientific foundation behind the two routing protocols used in this project.</p>
+</section>
+
+<section class="section-grid reveal">
+    <div class="glass-panel content-card">
+        <h3>Wireless Sensor Network</h3>
+        <p>
+            A wireless sensor network consists of distributed sensor nodes that collect data,
+            perform local communication, and transmit information to a base station with limited battery power.
+        </p>
+    </div>
+
+    <div class="glass-panel content-card">
+        <h3>LEACH Protocol</h3>
+        <p>
+            LEACH uses randomized cluster-head rotation to distribute communication energy across nodes,
+            reducing repeated long-range transmission from the same sensors.
+        </p>
+    </div>
+
+    <div class="glass-panel content-card">
+        <h3>AZC-PSO Protocol</h3>
+        <p>
+            AZC-PSO applies zone-based rotation and more informed cluster-head selection using remaining energy,
+            centroid proximity, and distance from the base station.
+        </p>
+    </div>
+</section>
+
+<section class="glass-panel text-panel reveal">
+    <h3>Why AZC-PSO can outperform LEACH</h3>
+    <p>
+        LEACH is simple and widely studied, but its random election can create uneven energy use.
+        AZC-PSO improves this by selecting better cluster heads and managing relay behavior more intelligently,
+        which can delay early node failure and improve total network lifetime.
+    </p>
+</section>
+{% endblock %}

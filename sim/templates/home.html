@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="home-hero cinematic-hero">
+    <div class="hero-left reveal">
+        <div class="eyebrow">Advanced Simulation Platform</div>
+        <h1 class="hero-title">
+            Wireless Sensor Network
+            <span class="gradient-text">Protocol Intelligence</span>
+        </h1>
+        <p class="hero-subtext">
+            A platform for simulating, analyzing, and comparing LEACH and AZC-PSO
+            routing protocols using a first-order radio energy model, live node animation,
+            fair same-seed evaluation, and research-grade charting.
+        </p>
+
+        <div class="hero-actions">
+            <a href="/simulation" class="btn btn-primary">Start Simulation</a>
+            <a href="/analysis" class="btn btn-secondary">Run Analysis</a>
+        </div>
+    </div>
+
+    <div class="hero-right reveal">
+        <div class="glass-panel hero-device-pro">
+            <div class="device-header-pro">
+                <span></span><span></span><span></span>
+            </div>
+
+            <div class="compare-stage">
+                <div class="compare-side">
+                    <div class="protocol-chip chip-leach">LEACH</div>
+                    <div class="network-preview network-preview-leach">
+                        <div class="preview-bs"></div>
+                        <span class="preview-node p1"></span>
+                        <span class="preview-node p2 ch"></span>
+                        <span class="preview-node p3"></span>
+                        <span class="preview-node p4"></span>
+                        <span class="preview-node p5 dead"></span>
+                        <span class="preview-node p6"></span>
+                        <span class="preview-link link-1"></span>
+                        <span class="preview-link link-2"></span>
+                        <span class="preview-link link-3"></span>
+                    </div>
+                </div>
+
+                <div class="compare-centerline"></div>
+
+                <div class="compare-side">
+                    <div class="protocol-chip chip-zcr">ZCR</div>
+                    <div class="network-preview network-preview-zcr">
+                        <div class="preview-bs"></div>
+                        <span class="preview-node q1"></span>
+                        <span class="preview-node q2 ch"></span>
+                        <span class="preview-node q3 ch"></span>
+                        <span class="preview-node q4"></span>
+                        <span class="preview-node q5"></span>
+                        <span class="preview-node q6"></span>
+                        <span class="preview-link link-a"></span>
+                        <span class="preview-link link-b"></span>
+                        <span class="preview-link link-c"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="counter-strip reveal">
+    <div class="metric-card floating-card">
+        <span>Total Nodes</span>
+        <strong class="counter" data-target="100">0</strong>
+        <small>Random deployment across 500m × 500m field</small>
+    </div>
+
+    <div class="metric-card floating-card">
+        <span>Protocols</span>
+        <strong>LEACH &amp; AZC-PSO</strong>
+        <small>Classical clustering versus zone-aware rotation</small>
+    </div>
+
+    <div class="metric-card floating-card">
+        <span>Energy Model</span>
+        <strong>First-Order Radio</strong>
+        <small>Free-space and multipath loss behavior</small>
+    </div>
+
+    <div class="metric-card floating-card">
+        <span>Fair Comparison</span>
+        <strong>Same Seed</strong>
+        <small>Both protocols run on identical deployment</small>
+    </div>
+</section>
+
+<section class="story-grid reveal">
+    <div class="glass-panel story-card hover-glass">
+        <div class="story-icon">01</div>
+        <h3>Live Simulation</h3>
+        <p>
+            Watch node-level behavior evolve in real time with animated routing links,
+            cluster-head highlighting, dynamic AZC-PSO radius, and base-station communication.
+        </p>
+    </div>
+
+    <div class="glass-panel story-card hover-glass">
+        <div class="story-icon">02</div>
+        <h3>Professional Analysis</h3>
+        <p>
+            Compare alive nodes, dead nodes, residual energy, first-node-death,
+            half-life, last-node-death, and overall protocol winner in one dashboard.
+        </p>
+    </div>
+
+    <div class="glass-panel story-card hover-glass">
+        <div class="story-icon">03</div>
+        <h3>Academic Presentation</h3>
+        <p>
+            The website separates theory, simulation, analysis, and conclusion.
+        </p>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head reveal">
+    <div class="eyebrow">Interactive Network Execution</div>
+    <h2>Simulation Studio</h2>
+    <p>
+        Run LEACH or ZCR live, inspect node-level behavior, scrub through saved rounds,
+        and replay the simulation with controls.
+    </p>
+</section>
+
+<section class="glass-panel control-panel reveal">
+    <div class="form-block">
+        <label for="protocolSelect">Protocol</label>
+        <select id="protocolSelect">
+            <option value="LEACH">LEACH</option>
+            <option value="azc-pso">AZC-PSO</option>
+        </select>
+    </div>
+
+    <div class="form-block">
+        <label for="seedInput">Seed</label>
+        <input id="seedInput" type="number" value="42">
+    </div>
+
+    <div class="form-block">
+        <label for="speedInput">Speed</label>
+        <input id="speedInput" type="range" min="50" max="900" step="25" value="180">
+    </div>
+
+    <div class="button-row">
+        <button class="btn btn-primary" id="startBtn">Start</button>
+        <button class="btn btn-secondary" id="stepBtn">Step</button>
+        <button class="btn btn-success" id="playBtn">Play</button>
+        <button class="btn btn-danger" id="pauseBtn">Pause</button>
+        <button class="btn btn-secondary" id="resetBtn">Reset</button>
+        <button class="btn btn-ghost" id="replayBtn">Replay</button>
+        <button class="btn btn-ghost" id="csvBtn">Export CSV</button>
+        <button class="btn btn-ghost" id="jsonBtn">Export JSON</button>
+    </div>
+</section>
+
+<section class="glass-panel scrubber-panel reveal">
+    <div class="scrubber-head">
+        <div>
+            <div class="eyebrow">Timeline Scrubber</div>
+            <h3>Round Playback</h3>
+        </div>
+        <div class="scrubber-meta">
+            <span>Viewing Round</span>
+            <strong id="scrubberRoundLabel">0</strong>
+        </div>
+    </div>
+
+    <input id="timelineSlider" type="range" min="0" max="0" value="0">
+</section>
+
+<section class="dashboard-grid reveal">
+    <div class="glass-panel canvas-card">
+        <div class="panel-head">
+            <h3>Network Animation</h3>
+            <span class="live-chip" id="simStatus">Idle</span>
+        </div>
+
+        <div class="canvas-wrap">
+            <canvas id="simCanvas" width="1200" height="720"></canvas>
+            <div id="nodeTooltip" class="node-tooltip hidden"></div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><span class="legend-dot normal"></span> Normal Node</div>
+            <div class="legend-item"><span class="legend-dot ch"></span> Cluster Head</div>
+            <div class="legend-item"><span class="legend-dot dead"></span> Dead Node</div>
+            <div class="legend-item"><span class="legend-line"></span> Communication Link</div>
+            <div class="legend-item"><span class="legend-box"></span> Base Station</div>
+        </div>
+    </div>
+
+    <div class="side-stack">
+        <div class="glass-panel">
+            <div class="panel-head">
+                <h3>Live Metrics</h3>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box"><span>Protocol</span><strong id="metricProtocol">-</strong></div>
+                <div class="stat-box"><span>Round</span><strong id="metricRound">0</strong></div>
+                <div class="stat-box"><span>Alive Nodes</span><strong id="metricAlive">0</strong></div>
+                <div class="stat-box"><span>Dead Nodes</span><strong id="metricDead">0</strong></div>
+                <div class="stat-box"><span>Total Energy</span><strong id="metricEnergy">0.0000</strong></div>
+                <div class="stat-box"><span>First Dead Round</span><strong id="metricFND">-</strong></div>
+                <div class="stat-box"><span>Half Dead Round</span><strong id="metricHND">-</strong></div>
+                <div class="stat-box"><span>Last Dead Round</span><strong id="metricLND">-</strong></div>
+            </div>
+        </div>
+
+        <div class="glass-panel mini-chart-card">
+            <div class="panel-head">
+                <h3>Alive Trend</h3>
+                <span class="chart-chip">Mini View</span>
+            </div>
+            <div class="mini-chart-shell">
+                <canvas id="miniAliveChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-panel mini-chart-card">
+            <div class="panel-head">
+                <h3>Energy Trend</h3>
+                <span class="chart-chip">Mini View</span>
+            </div>
+            <div class="mini-chart-shell">
+                <canvas id="miniEnergyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
