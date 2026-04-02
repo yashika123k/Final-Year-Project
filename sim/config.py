@@ -13,15 +13,13 @@ METERS_TO_PIXELS_X: float = VISUALIZATION_WIDTH_PX / DEPLOYMENT_AREA_WIDTH_M
 METERS_TO_PIXELS_Y: float = VISUALIZATION_HEIGHT_PX / DEPLOYMENT_AREA_HEIGHT_M
 
 TARGET_FPS: int = 10
-SENSOR_VISUAL_RADIUS_PX: int = 8
+SENSOR_VISUAL_RADIUS_PX: int = 6
 
 # =============================================================================
-# LEACH Protocol Parameters
+# Protocol Parameters
 # =============================================================================
 TOTAL_SENSOR_NODES: int = 100
 CLUSTER_HEAD_PROBABILITY: float = 0.1
-EXPECTED_NUM_CLUSTER_HEADS: int = int(np.ceil(TOTAL_SENSOR_NODES * CLUSTER_HEAD_PROBABILITY))
-CLUSTER_HEAD_CYCLE_LENGTH_ROUNDS: int = int(1.0 / CLUSTER_HEAD_PROBABILITY)
 
 # =============================================================================
 # First-Order Radio Energy Model Parameters
@@ -39,13 +37,21 @@ DATA_PACKET_SIZE_BITS: float = 4000.0
 FS_MULTIPATH_THRESHOLD_DISTANCE_M: float = 87.7
 
 # =============================================================================
-# Base Station (Sink)
+# Base Station
 # =============================================================================
-BASE_STATION_POSITION = np.array([DEPLOYMENT_AREA_WIDTH_M / 2.0, DEPLOYMENT_AREA_HEIGHT_M / 2.0], dtype=np.float32)
+BASE_STATION_POSITION = np.array(
+    [DEPLOYMENT_AREA_WIDTH_M / 2.0, DEPLOYMENT_AREA_HEIGHT_M / 2.0],
+    dtype=np.float32
+)
 
 # =============================================================================
 # Simulation Control
 # =============================================================================
 MAX_SIMULATION_ROUNDS: int = 2000
-TARGET_SIMULATION_STEPS_PER_SECOND: float = 10.0
+TARGET_SIMULATION_STEPS_PER_SECOND: float = 4.0
 
+# =============================================================================
+# Analysis Mode
+# =============================================================================
+ANALYSIS_MAX_ROUNDS: int = 500
+ANALYSIS_CACHE_ENABLED: bool = True
