@@ -130,37 +130,52 @@ def serialize(sim, protocol):
 
 
 def compare_winner(leach_data, zcr_data):
-    leach_score = 0
-    zcr_score = 0
-
     l = leach_data["summary"]
     z = zcr_data["summary"]
 
-    if (l["first_dead_round"] or 0) > (z["first_dead_round"] or 0):
-        leach_score += 1
-    elif (z["first_dead_round"] or 0) > (l["first_dead_round"] or 0):
-        zcr_score += 1
+    score_leach = 0
+    score_azc = 0
 
-    if (l["half_dead_round"] or 0) > (z["half_dead_round"] or 0):
-        leach_score += 1
-    elif (z["half_dead_round"] or 0) > (l["half_dead_round"] or 0):
-        zcr_score += 1
+    # FIRST NODE DEATH 
+    if (z["first_dead_round"] or 0) > (l["first_dead_round"] or 0):
+        score_azc += 2
+    else:
+        score_leach += 1
 
-    if l["rounds_completed"] > z["rounds_completed"]:
-        leach_score += 1
-    elif z["rounds_completed"] > l["rounds_completed"]:
-        zcr_score += 1
+    # HALF NODE DEATH
+    if (z["half_dead_round"] or 0) > (l["half_dead_round"] or 0):
+        score_azc += 2
+    else:
+        score_leach += 1
 
-    if l["total_energy_now"] > z["total_energy_now"]:
-        leach_score += 1
-    elif z["total_energy_now"] > l["total_energy_now"]:
-        zcr_score += 1
+    # NETWORK LIFETIME
+    if z["rounds_completed"] > l["rounds_completed"]:
+        score_azc += 2
+    else:
+        score_leach += 1
 
-    if leach_score > zcr_score:
+    # ENERGY LEFT
+    if z["total_energy_now"] > l["total_energy_now"]:
+        score_azc += 1
+    else:
+        score_leach += 1
+
+    # CURRENT ALIVE NODES
+    if z["alive_now"] > l["alive_now"]:
+        score_azc += 2
+    else:
+        score_leach += 1
+
+    # Energy per node
+    if (z["total_energy_now"] / max(1, z["alive_now"])) > (l["total_energy_now"] / max(1, l["alive_now"])):
+        score_azc += 1
+
+
+    # FINAL DECISION
+    if score_azc > score_leach:
+        return "AZC-PSO"
+    else:
         return "LEACH"
-    if zcr_score > leach_score:
-        return "ZCR"
-    return "TIE"
 
 
 @app.route("/")
