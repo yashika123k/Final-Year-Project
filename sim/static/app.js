@@ -170,18 +170,20 @@ function setWinnerHero(winner) {
   const title = byId("winnerTitle");
   const text = byId("winnerText");
   const badge = byId("winnerBadge");
+
   if (!title || !text || !badge) return;
 
   badge.className = "winner-badge";
+
   if (winner === "LEACH") {
     title.textContent = "LEACH leads this comparison";
     text.textContent = "LEACH performed better for the selected seed based on death timing, lifetime, and final energy.";
     badge.textContent = "LEACH";
     badge.classList.add("leach");
-  } else if (winner === "ZCR") {
-    title.textContent = "ZCR leads this comparison";
-    text.textContent = "ZCR performed better for the selected seed by balancing energy and delaying network failure.";
-    badge.textContent = "ZCR";
+  } else if (winner === "AZC-PSO" || winner === "ZCR") {
+    title.textContent = "AZC-PSO leads this comparison";
+    text.textContent = "AZC-PSO performed better for the selected seed by balancing energy and delaying network failure.";
+    badge.textContent = "AZC-PSO";
     badge.classList.add("zcr");
   } else {
     title.textContent = "The protocols are tied";
