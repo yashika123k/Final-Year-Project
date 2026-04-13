@@ -51,7 +51,7 @@ MAX_SIMULATION_ROUNDS: int = 2000
 TARGET_SIMULATION_STEPS_PER_SECOND: float = 4.0
 
 # =============================================================================
-# Analysis Mode
+# Fast Analysis Mode
 # =============================================================================
 ANALYSIS_MAX_ROUNDS: int = 500
 ANALYSIS_CACHE_ENABLED: bool = True

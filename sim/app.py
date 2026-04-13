@@ -136,7 +136,7 @@ def compare_winner(leach_data, zcr_data):
     score_leach = 0
     score_azc = 0
 
-    # FIRST NODE DEATH 
+    # FIRST NODE DEATH
     if (z["first_dead_round"] or 0) > (l["first_dead_round"] or 0):
         score_azc += 2
     else:
